@@ -97,3 +97,6 @@ class Subscription(models.Model):
             self.save(update_fields=["status", "updated_at"])
             return True
         return False
+
+from .invoice_models import Invoice  # noqa: E402,F401
+from .payment_models import PaymentTransaction  # noqa: E402,F401
