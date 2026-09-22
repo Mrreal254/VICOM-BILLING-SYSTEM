@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Customer(models.Model):
@@ -73,3 +74,26 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f"{self.customer} / {self.package}"
+
+    def activate(self, *, start_date=None):
+        start = start_date or self.start_date or timezone.now()
+        self.start_date = start
+        self.end_date = start + timezone.timedelta(days=self.package.duration_days)
+        self.status = self.Status.ACTIVE
+        self.save(update_fields=["start_date", "end_date", "status", "updated_at"])
+
+    def suspend(self):
+        self.status = self.Status.SUSPENDED
+        self.save(update_fields=["status", "updated_at"])
+
+    def cancel(self):
+        self.status = self.Status.CANCELLED
+        self.auto_renew = False
+        self.save(update_fields=["status", "auto_renew", "updated_at"])
+
+    def mark_expired_if_due(self):
+        if self.status == self.Status.ACTIVE and self.end_date and self.end_date <= timezone.now():
+            self.status = self.Status.EXPIRED
+            self.save(update_fields=["status", "updated_at"])
+            return True
+        return False
