@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VICOM Billing Dashboard</title>
+  <style>
+    :root{--green:#0b6b45;--green2:#0f8a59;--ink:#10231b;--muted:#6b7b74;--bg:#f4f7f5;--card:#fff;--line:#e1e9e5}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+    .layout{display:flex;min-height:100vh}.sidebar{width:245px;background:#092d20;color:#fff;padding:26px 18px}.brand{font-size:21px;font-weight:800;margin-bottom:36px}.brand span{display:block;color:#9de0bf;font-size:12px;margin-top:4px;font-weight:500}.nav a{display:block;color:#d8eee4;text-decoration:none;padding:12px 14px;border-radius:9px;margin:4px 0}.nav a.active,.nav a:hover{background:#0d6d48;color:#fff}.main{flex:1;padding:30px;max-width:1500px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.top h1{margin:0;font-size:28px}.top p{margin:6px 0 0;color:var(--muted)}.pill{background:#e0f4ea;color:#08633f;border-radius:999px;padding:9px 13px;font-weight:700;font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:0 3px 12px rgba(16,35,27,.04)}.label{font-size:13px;color:var(--muted)}.value{font-size:28px;font-weight:800;margin-top:10px}.sub{font-size:12px;color:var(--green);margin-top:7px}.section{margin-top:22px}.section h2{font-size:18px;margin:0 0 12px}.split{display:grid;grid-template-columns:2fr 1fr;gap:18px}.bar{height:12px;background:#e9efec;border-radius:99px;overflow:hidden;margin:13px 0}.bar i{display:block;height:100%;background:var(--green2);width:0}.rows{display:grid;gap:11px}.row{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:10px 0}.muted{color:var(--muted)}.error{color:#a22;background:#fff0f0;border:1px solid #f0caca;padding:12px;border-radius:10px;display:none;margin-bottom:15px}@media(max-width:950px){.sidebar{width:190px}.grid{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}}@media(max-width:620px){.layout{display:block}.sidebar{width:100%;padding:18px}.nav{display:flex;gap:5px;overflow:auto}.nav a{white-space:nowrap}.main{padding:18px}.grid{grid-template-columns:1fr}.top{align-items:flex-start;gap:12px}}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">VICOM BILLING<span>ISP Billing Management</span></div>
+    <nav class="nav"><a class="active" href="#">Dashboard</a><a href="#invoices">Invoices</a><a href="#payments">Payments</a><a href="#customers">Customers</a><a href="#subscriptions">Subscriptions</a></nav>
+  </aside>
+  <main class="main">
+    <div id="error" class="error"></div>
+    <div class="top"><div><h1>Billing Dashboard</h1><p>Revenue, subscriptions, invoices and collections.</p></div><div class="pill">Tenant billing</div></div>
+    <section class="grid">
+      <div class="card"><div class="label">Customers</div><div class="value" id="customers">—</div><div class="sub">Registered customers</div></div>
+      <div class="card"><div class="label">Active subscriptions</div><div class="value" id="subscriptions">—</div><div class="sub">Currently active</div></div>
+      <div class="card"><div class="label">Invoices</div><div class="value" id="invoices">—</div><div class="sub">Issued and recorded</div></div>
+      <div class="card"><div class="label">Collected</div><div class="value" id="collected">—</div><div class="sub">Successful payments</div></div>
+    </section>
+    <section class="split section">
+      <div class="card"><h2>Collections overview</h2><div class="rows"><div class="row"><span class="muted">Issued invoice value</span><strong id="issued">—</strong></div><div class="row"><span class="muted">Outstanding balance</span><strong id="outstanding">—</strong></div><div class="row"><span class="muted">Successful payments</span><strong id="paymentCount">—</strong></div></div></div>
+      <div class="card"><h2>Collection status</h2><div class="label">Collected vs issued</div><div class="bar"><i id="progress"></i></div><strong id="rate">—</strong><div class="label" style="margin-top:12px">Payment collection ratio</div></div>
+    </section>
+    <section class="card section"><h2>VICOM platform billing</h2><div class="rows"><div class="row"><span>Hotspot platform fee</span><strong>3% of hotspot revenue</strong></div><div class="row"><span>PPPoE platform fee</span><strong>KSh 25 / active subscriber</strong></div></div></section>
+  </main>
+</div>
+<script>
+const money=v=>`KSh ${Number(v||0).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+async function load(){
+  try{
+    const r=await fetch('/api/billing/dashboard/',{headers:{'Accept':'application/json'}});
+    if(!r.ok) throw new Error(r.status===401?'Please sign in to view the billing dashboard.':`Dashboard API returned ${r.status}.`);
+    const d=await r.json();
+    document.getElementById('customers').textContent=d.customers??0;
+    document.getElementById('subscriptions').textContent=d.active_subscriptions??0;
+    document.getElementById('invoices').textContent=d.invoices??0;
+    document.getElementById('collected').textContent=money(d.collected);
+    document.getElementById('issued').textContent=money(d.issued_total);
+    document.getElementById('outstanding').textContent=money(d.outstanding);
+    document.getElementById('paymentCount').textContent=d.successful_payments??0;
+    const issued=Number(d.issued_total||0), collected=Number(d.collected||0), pct=issued?Math.min(100,collected/issued*100):0;
+    document.getElementById('progress').style.width=pct+'%'; document.getElementById('rate').textContent=pct.toFixed(1)+'%';
+  }catch(e){const box=document.getElementById('error');box.textContent=e.message;box.style.display='block';}
+}
+load();
+</script>
+</body>
+</html>
