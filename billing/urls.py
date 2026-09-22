@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .dashboard_views import BillingDashboardView
+from .dashboard_ui import billing_dashboard
 from .invoice_api import PlatformInvoiceGenerateView, SubscriptionInvoiceGenerateView
 from .lifecycle_api import SubscriptionLifecycleView
 from .payment_api import InvoicePaymentView, PaymentSuccessView
@@ -22,4 +23,5 @@ urlpatterns = [
     path("invoices/<int:invoice_id>/payments/", InvoicePaymentView.as_view(), name="invoice-payment-create"),
     path("payments/<int:payment_id>/success/", PaymentSuccessView.as_view(), name="payment-success"),
     path("dashboard/", BillingDashboardView.as_view(), name="billing-dashboard"),
+    path("dashboard/ui/", billing_dashboard, name="billing-dashboard-ui"),
 ]
