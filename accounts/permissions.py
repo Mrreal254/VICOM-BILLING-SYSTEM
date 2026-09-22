@@ -29,3 +29,16 @@ class IsTenantAdmin(BasePermission):
             and request.user.role == User.Role.ISP_ADMIN
             and request.user.tenant_id
         )
+
+
+class IsTenantUser(BasePermission):
+    """Allow any authenticated user assigned to an ISP tenant."""
+
+    message = "A tenant assignment is required."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.tenant_id
+        )
